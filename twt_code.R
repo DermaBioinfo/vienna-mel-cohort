@@ -39,4 +39,51 @@ s1$NF1 <- F
 
 result <- aggregate(. ~ Sample, rbind.fill(s1, s4, s6, s10), FUN = any)
 result$twt <- !(result$BRAF | result$NRAS | result$NF1)
-write.xlsx(result, "TWT_res.xlsx", sheetName = "twt", col.names = TRUE, row.names = TRUE, append = FALSE)
+
+library("shiny")
+ui <- fluidPage(
+  titlePanel("Identification of mutated samples"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(inputId = "gene",
+                  label = "Choose a gene:",
+                  choices = c("BRAF", "NRAS", "NF1")),
+      
+      selectInput(inputId = "status",
+                  label = "Choose a status: ",
+                  choices = c("mutated", "non-mutated","ignored"))
+    ),
+    
+    # Main panel for displaying outputs ----
+    mainPanel(
+      
+      # Output: Formatted text for caption ----
+      h3(textOutput("Mutated samples", container = span)),
+      
+      # Output: HTML table
+      tableOutput("view")
+      
+    )
+  )
+)
+
+server <- function(input, output) {
+  datasetInput <- reactive({
+    gene <- toString(input$gene)
+    if (input$status == "mutated") {
+      subset(result, result[, gene] == TRUE)
+    } 
+    else if (input$status == "non-mutated") {
+      subset(result, result[, gene] == FALSE)
+    }
+    else {
+      result[, !names(result) %in% gene]
+    }
+  })
+  
+  output$view <- renderTable({
+    datasetInput()
+  })
+}
+shinyApp(ui = ui, server = server)
