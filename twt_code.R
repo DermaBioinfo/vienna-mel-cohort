@@ -40,6 +40,31 @@ s1$NF1 <- F
 
 result <- aggregate(. ~ Sample, rbind.fill(s1, s4, s6, s10), FUN = any)
 result$twt <- !(result$BRAF | result$NRAS | result$NF1)
+write.xlsx(result, "TWT_res.xlsx", sheetName="1", col.names=TRUE, row.names=TRUE, append=FALSE)
+
+#KIT mutation for twt
+new_mut <- c("KIT")
+twt <- subset(result, result$twt)
+
+s4KIT <- as.data.frame(read_excel("NIHMS362881-supplement-3.xlsx", sheet = "TABLE S4", skip = 5, col_names = T))
+s4KIT <- s4KIT[, c(1, 2)]
+s4KIT <- subset(s4KIT, (s4KIT[, 1] %in% twt[, 1]) & (s4KIT[, 2] %in% new_mut))
+#no rows selected
+
+s6KIT <- as.data.frame(read_excel("NIHMS362881-supplement-3.xlsx", sheet = "TABLE S6", skip = 5, col_names = T))
+s6KIT <- s6KIT[, c(1, 2)]
+s6KIT <- subset(s6KIT, (s6KIT[, 1] %in% twt[, 1]) & (s6KIT[, 2] %in% new_mut))
+s6KIT[, 2] <- T
+names(s6KIT) <- c("Sample", "KIT")
+
+s4AKIT <- read.table("NIHMS362881-supplement-2.txt", header = T, sep = "\t")
+s4AKIT <- s4AKIT[, c(1, 8)]
+s4AKIT <- unique(subset(s4AKIT, (s4AKIT[, 1] %in% twt[, 1]) & (s4AKIT[, 2] %in% new_mut)))
+s4AKIT[, 2] <- T
+names(s4AKIT) <- c("Sample", "KIT")
+
+twt$KIT <- (twt[, 1] %in% s4KIT[, 1]) | (twt[, 1] %in% s6KIT[, 1]) | (twt[, 1] %in% s4AKIT[, 1])
+write.xlsx(twt, "TWT_KIT.xlsx", sheetName="1", col.names=TRUE, row.names=TRUE, append=FALSE)
 
 library("shiny")
 ui <- fluidPage(
