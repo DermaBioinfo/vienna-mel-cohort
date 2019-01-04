@@ -76,6 +76,7 @@ ui <- fluidPage(
       h6("*Check the box to view the mutational status (mutated or non-mutated) of the gene"),
       h6("*Uncheck the box for out-of-consideration gene"),
       tags$br(),
+      h6("*BRAF mutations indicate only V600E ones"),
       lapply(mut, function(gene) {
         fluidRow(
           column(3, checkboxInput(inputId=toString(gene), label=toString(gene), TRUE)),
