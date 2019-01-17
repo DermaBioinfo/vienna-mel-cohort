@@ -147,7 +147,6 @@ ui <- fluidPage(
       h6("*Check the box to view the mutational status (mutated or non-mutated) of the gene"),
       h6("*Uncheck the box for out-of-consideration gene"),
       tags$br(),
-      h6("*BRAF mutations indicate only V600E ones"),
       lapply(mut, function(gene) {
         fluidRow(
           column(3, checkboxInput(inputId=toString(gene), label=toString(gene), TRUE)),
@@ -171,20 +170,21 @@ ui <- fluidPage(
 server <- function(input, output) {
   datasetInput <- reactive({
     res <- result
+    
     for (gene in mut) {
       if (input[[gene]]) {
         if (input[[paste0("status", gene)]] == "mutated") {
-          temp <- subset(result, result[, toString(gene)] == TRUE)
+          temp <- subset(result, !grepl("^\\s*$", result[, toString(gene)]))
         } 
         else {
-          temp <- subset(result, result[, toString(gene)] == FALSE)
+          temp <- subset(result, grepl("^\\s*$", result[, toString(gene)]))
         }
-        res <- join(res, temp, type="inner", match = "all")
       }
       else {
         # case of uncheck
-        res[, gene] <- NULL
+        temp <- result
       }
+      res <- join(res, temp, type="inner")
     }
     # another case of uncheck
     #for (gene in mut) {
