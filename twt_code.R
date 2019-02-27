@@ -1,8 +1,11 @@
+setwd("/Users/vy/Desktop/thesis/code/vienna-mel-cohort")
+
 library("readxl")
 library("plyr")
+library(dplyr)
 library("xlsx")
 
-mut <- c("BRAF", "NRAS", "NF1", "KRAS", "GNAQ", "GNA11", "KIT")
+mut <- c("BRAF", "NRAS", "NF1", "KRAS", "GNAQ", "GNA11", "KIT", "PTEN")
 
 s1 <- as.data.frame(read_excel("NIHMS362881-supplement-3.xlsx", sheet = "TABLE S1", skip = 6, col_names = T))
 s1 <- s1[, c(1, 16, 17)]
@@ -24,6 +27,11 @@ s6 <- as.data.frame(read_excel("NIHMS362881-supplement-3.xlsx", sheet = "TABLE S
 s6 <- s6[, c(1, 2, 19)]
 s6 <- unique(subset(s6, grepl("ME0", s6[, 1]) & s6[, 2] %in% mut))
 #s6 produce only KIT YIDPTQL570del, which is included in s3 so we can ignore s6
+
+s8 <- as.data.frame(read_excel("NIHMS362881-supplement-3.xlsx", sheet = "TABLE S8", skip = 6, col_names = T))
+s8 <- s8[, c(3, 2, 18)]
+colnames(s8) <- c("Sample", "Hugo_Symbol", "Variant_Classification")
+s8 <- unique(subset(s8, grepl("ME0", s8[, 1]) & s8[, 2] %in% mut))
 
 s10 <- as.data.frame(read_excel("NIHMS362881-supplement-3.xlsx", sheet = "TABLE S10", skip = 6, col_names = T))
 s10 <- s10[, c(1, 6, 7)]
@@ -72,8 +80,9 @@ s3 <- s3[!(s3$Hugo_Symbol == "NRAS" & !grepl("Q61", s3$Protein_Change)),]
 s4A <- anti_join(s4A, s3, by=c("Sample", "Hugo_Symbol", "Variant_Classification"))
 #add LoH to NF1 mut
 s3$Variant_Classification <- as.character(s3$Variant_Classification)
-s3$Variant_Classification[s3$Hugo_Symbol == "NF1"] <- paste0(s3[, 2], ", LoH")
-s4A3 <- merge(s4A, s3, by=c("Sample", "Hugo_Symbol"), all=T)
+#s3$Variant_Classification[s3$Hugo_Symbol == "NF1"] <- paste0(s3[, 2], ", LoH")
+s3$Variant_Classification <- paste0(s3[, 2], ", LoH")
+s4A3 <- merge(s4A, merge(s8, s3, by=c("Sample", "Hugo_Symbol", "Variant_Classification"), all = T), by=c("Sample", "Hugo_Symbol"), all=T)
 #replace NA values by ""
 s4A3$Variant_Classification.x <- as.character(s4A3$Variant_Classification.x)
 s4A3$Variant_Classification.x[is.na(s4A3$Variant_Classification.x)] <- ""
@@ -106,7 +115,7 @@ s4A3_461$Variant_Classification <- NULL
 s4A3_461$Protein_Change <- NULL
 #unmelt data
 s4A3_461 <- reshape(s4A3_461, idvar = "Sample", timevar = "Hugo_Symbol", direction = "wide")
-names(s4A3_461)[c(2:8)] <- gsub("Specification.", "", names(s4A3_461)[c(2:8)])
+names(s4A3_461)[c(2:9)] <- gsub("Specification.", "", names(s4A3_461)[c(2:9)])
 
 #remove rows of s110 contained in s4A3_416
 result <- merge(s110, s4A3_461, by="Sample", all=T)
@@ -133,8 +142,9 @@ result$GNA11[is.na(result$GNA11)] <- ""
 result$KRAS[is.na(result$KRAS)] <- ""
 result$NF1[is.na(result$NF1)] <- ""
 result$KIT[is.na(result$KIT)] <- ""
+result$PTEN[is.na(result$PTEN)] <- ""
 
-result <- result[, c(1, 7, 8, 4, 2, 3, 6, 5)]
+result <- result[, c(1, 8, 9, 4, 2, 3, 7, 5, 6)]
 write.xlsx(result, "TWT_specification.xlsx", sheetName="1", col.names=TRUE, row.names=TRUE, append=FALSE)
 
 library("shiny")
